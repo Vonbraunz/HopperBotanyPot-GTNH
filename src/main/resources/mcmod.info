@@ -1,0 +1,14 @@
+[
+  {
+    "modid": "botanypots",
+    "name": "Botany Pots 1710",
+    "description": "Grow crops in pots with hopper automation. Supports CropsNH seed stats.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "authorList": ["vonbraunz"],
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]

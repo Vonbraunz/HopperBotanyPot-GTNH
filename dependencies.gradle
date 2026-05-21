@@ -1,0 +1,5 @@
+// Both are always present in GTNH — compile against them, don't bundle them.
+dependencies {
+    compileOnly("com.github.GTNewHorizons:CropsNH:1.0.14:dev") { transitive = false }
+    compileOnly("com.github.GTNewHorizons:waila:1.19.22:dev")  { transitive = false }
+}

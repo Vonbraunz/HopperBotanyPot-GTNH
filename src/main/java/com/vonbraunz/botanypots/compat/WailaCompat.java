@@ -1,11 +1,7 @@
 package com.vonbraunz.botanypots.compat;
 
-import com.vonbraunz.botanypots.tileentity.TileEntityBotanyPot;
-import cpw.mods.fml.common.event.FMLInterModComms;
-import mcp.mobius.waila.api.IWailaConfigHandler;
-import mcp.mobius.waila.api.IWailaDataAccessor;
-import mcp.mobius.waila.api.IWailaDataProvider;
-import mcp.mobius.waila.api.IWailaRegistrar;
+import java.util.List;
+
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -13,15 +9,20 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.world.World;
 
-import java.util.List;
+import com.vonbraunz.botanypots.tileentity.TileEntityBotanyPot;
+
+import cpw.mods.fml.common.event.FMLInterModComms;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
+import mcp.mobius.waila.api.IWailaDataProvider;
+import mcp.mobius.waila.api.IWailaRegistrar;
 
 public class WailaCompat implements IWailaDataProvider {
 
     private static final WailaCompat INSTANCE = new WailaCompat();
 
     public static void init() {
-        FMLInterModComms.sendMessage("Waila", "register",
-            "com.vonbraunz.botanypots.compat.WailaCompat.register");
+        FMLInterModComms.sendMessage("Waila", "register", "com.vonbraunz.botanypots.compat.WailaCompat.register");
     }
 
     @SuppressWarnings("unused")
@@ -31,8 +32,8 @@ public class WailaCompat implements IWailaDataProvider {
     }
 
     @Override
-    public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity te,
-                                     NBTTagCompound tag, World world, int x, int y, int z) {
+    public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity te, NBTTagCompound tag, World world, int x,
+        int y, int z) {
         TileEntityBotanyPot pot = (TileEntityBotanyPot) te;
 
         ItemStack soil = pot.getStackInSlot(TileEntityBotanyPot.SLOT_SOIL);
@@ -42,9 +43,11 @@ public class WailaCompat implements IWailaDataProvider {
             tag.setString("wailaSoil", soil.getDisplayName());
         }
         if (seed != null) {
-            tag.setString("wailaCrop", CropsNHCompat.isCropsNHSeed(seed)
-                ? CropsNHCompat.getCropDisplayName(seed)
-                : seed.getDisplayName());
+            boolean isCropsNH = CropCompatManager.hasCropsNH() && CropCompatManager.get()
+                .isSeed(seed);
+            String cropName = isCropsNH ? CropCompatManager.get()
+                .getDisplayName(seed) : seed.getDisplayName();
+            tag.setString("wailaCrop", cropName);
             tag.setInteger("wailaProgress", (int) (pot.getGrowthProgress() * 100));
         }
 
@@ -52,23 +55,18 @@ public class WailaCompat implements IWailaDataProvider {
     }
 
     @Override
-    public List<String> getWailaBody(ItemStack itemStack, List<String> tooltip,
-                                     IWailaDataAccessor accessor, IWailaConfigHandler config) {
+    public List<String> getWailaBody(ItemStack itemStack, List<String> tooltip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
         NBTTagCompound tag = accessor.getNBTData();
 
-        String soil = tag.hasKey("wailaSoil")
-            ? tag.getString("wailaSoil")
-            : EnumChatFormatting.DARK_GRAY + "Empty";
+        String soil = tag.hasKey("wailaSoil") ? tag.getString("wailaSoil") : EnumChatFormatting.DARK_GRAY + "Empty";
         tooltip.add(EnumChatFormatting.GRAY + "Soil: " + EnumChatFormatting.WHITE + soil);
 
         if (tag.hasKey("wailaCrop")) {
-            tooltip.add(EnumChatFormatting.GRAY + "Crop: "
-                + EnumChatFormatting.WHITE + tag.getString("wailaCrop"));
-            tooltip.add(EnumChatFormatting.GRAY + "Growth: "
-                + progressBar(tag.getInteger("wailaProgress")));
+            tooltip.add(EnumChatFormatting.GRAY + "Crop: " + EnumChatFormatting.WHITE + tag.getString("wailaCrop"));
+            tooltip.add(EnumChatFormatting.GRAY + "Growth: " + progressBar(tag.getInteger("wailaProgress")));
         } else {
-            tooltip.add(EnumChatFormatting.GRAY + "Crop: "
-                + EnumChatFormatting.DARK_GRAY + "Empty");
+            tooltip.add(EnumChatFormatting.GRAY + "Crop: " + EnumChatFormatting.DARK_GRAY + "Empty");
         }
 
         return tooltip;
@@ -81,14 +79,27 @@ public class WailaCompat implements IWailaDataProvider {
             if (i == filled) bar.append(EnumChatFormatting.DARK_GRAY);
             bar.append('|');
         }
-        bar.append(EnumChatFormatting.GRAY).append(' ').append(percent).append('%');
+        bar.append(EnumChatFormatting.GRAY)
+            .append(' ')
+            .append(percent)
+            .append('%');
         return bar.toString();
     }
 
     @Override
-    public ItemStack getWailaStack(IWailaDataAccessor accessor, IWailaConfigHandler config) { return null; }
+    public ItemStack getWailaStack(IWailaDataAccessor accessor, IWailaConfigHandler config) {
+        return null;
+    }
+
     @Override
-    public List<String> getWailaHead(ItemStack stack, List<String> tooltip, IWailaDataAccessor accessor, IWailaConfigHandler config) { return tooltip; }
+    public List<String> getWailaHead(ItemStack stack, List<String> tooltip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        return tooltip;
+    }
+
     @Override
-    public List<String> getWailaTail(ItemStack stack, List<String> tooltip, IWailaDataAccessor accessor, IWailaConfigHandler config) { return tooltip; }
+    public List<String> getWailaTail(ItemStack stack, List<String> tooltip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        return tooltip;
+    }
 }

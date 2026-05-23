@@ -1,14 +1,14 @@
-[
+﻿[
   {
     "modid": "botanypots",
-    "name": "Botany Pots 1710",
-    "description": "Grow crops in pots with hopper automation. Supports CropsNH seed stats.",
-    "version": "${version}",
-    "mcversion": "${mcversion}",
-    "url": "",
+    "name": "BotanyPots 1710",
+    "description": "Adds the Hopper Botany Pot - a small decorative planter that passively grows crops and saplings and automatically ejects harvests into hoppers below. Supports CropsNH, Pam's HarvestCraft, and any OreDict-registered seeds. Built for GT:NH.",
+    "version": "1.0.0",
+    "mcversion": "1.7.10",
+    "url": "https://github.com/Vonbraunz/HopperBotanyPot-GTNH",
     "authorList": ["vonbraunz"],
+    "credits": "Inspired by the BotanyPots mod by DarkhaxDev.",
     "logoFile": "",
-    "screenshots": [],
     "dependencies": []
   }
 ]

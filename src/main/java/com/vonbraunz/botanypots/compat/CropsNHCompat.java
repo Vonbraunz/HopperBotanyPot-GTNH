@@ -1,25 +1,28 @@
 package com.vonbraunz.botanypots.compat;
 
-import com.gtnewhorizon.cropsnh.api.ICropCard;
-import com.gtnewhorizon.cropsnh.api.ISeedStats;
-import com.gtnewhorizon.cropsnh.farming.SeedStats;
-import com.gtnewhorizon.cropsnh.farming.registries.CropRegistry;
-import net.minecraft.item.ItemStack;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class CropsNHCompat {
+import net.minecraft.item.ItemStack;
+
+import com.gtnewhorizon.cropsnh.api.ICropCard;
+import com.gtnewhorizon.cropsnh.api.ISeedStats;
+import com.gtnewhorizon.cropsnh.farming.SeedStats;
+import com.gtnewhorizon.cropsnh.farming.registries.CropRegistry;
+
+public class CropsNHCompat implements ICropsNHHandler {
 
     private static final Random rand = new Random();
 
-    public static boolean isCropsNHSeed(ItemStack stack) {
+    @Override
+    public boolean isSeed(ItemStack stack) {
         return stack != null && CropRegistry.instance.get(stack) != null;
     }
 
-    public static int getGrowthTicks(ItemStack seed, float soilMultiplier) {
+    @Override
+    public int getGrowthTicks(ItemStack seed, float soilMultiplier) {
         ICropCard crop = CropRegistry.instance.get(seed);
         if (crop == null) return 6000;
 
@@ -30,7 +33,8 @@ public class CropsNHCompat {
         return Math.max(20, (int) (ticks / soilMultiplier));
     }
 
-    public static List<ItemStack> getDrops(ItemStack seed) {
+    @Override
+    public List<ItemStack> getDrops(ItemStack seed) {
         ICropCard crop = CropRegistry.instance.get(seed);
         if (crop == null) return new ArrayList<>();
 
@@ -52,7 +56,8 @@ public class CropsNHCompat {
             if (rand.nextFloat() < gainStat * 0.01f) count++;
 
             if (count > 0) {
-                ItemStack drop = entry.getKey().copy();
+                ItemStack drop = entry.getKey()
+                    .copy();
                 drop.stackSize = count;
                 result.add(drop);
             }
@@ -60,15 +65,12 @@ public class CropsNHCompat {
         return result;
     }
 
-    /** Returns "CropName (G:15 Ga:20 R:8)" for WAILA display. */
-    public static String getCropDisplayName(ItemStack seed) {
-        ICropCard crop = CropRegistry.instance.get(seed);
-        String name = (crop != null) ? crop.getCropName() : seed.getDisplayName();
-
+    @Override
+    public String getDisplayName(ItemStack seed) {
+        String name = seed.getDisplayName();
         ISeedStats stats = SeedStats.getStatsFromStack(seed);
         if (stats != null) {
-            name += String.format(" (G:%d Ga:%d R:%d)",
-                stats.getGrowth(), stats.getGain(), stats.getResistance());
+            name += String.format(" (G:%d Ga:%d R:%d)", stats.getGrowth(), stats.getGain(), stats.getResistance());
         }
         return name;
     }

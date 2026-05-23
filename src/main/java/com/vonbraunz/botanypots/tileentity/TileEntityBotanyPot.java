@@ -1,9 +1,10 @@
 package com.vonbraunz.botanypots.tileentity;
 
-import com.vonbraunz.botanypots.compat.CropsNHCompat;
-import com.vonbraunz.botanypots.registry.BotanyCropRegistry;
-import com.vonbraunz.botanypots.registry.SoilRegistry;
+import java.util.List;
+
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -11,12 +12,14 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.Constants;
 
-import java.util.List;
+import com.vonbraunz.botanypots.compat.CropCompatManager;
+import com.vonbraunz.botanypots.registry.BotanyCropRegistry;
+import com.vonbraunz.botanypots.registry.SoilRegistry;
 
 public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
 
-    public static final int SLOT_SOIL   = 0;
-    public static final int SLOT_SEED   = 1;
+    public static final int SLOT_SOIL = 0;
+    public static final int SLOT_SEED = 1;
     public static final int SLOT_OUTPUT = 2;
     private static final int SIZE = 3;
 
@@ -34,6 +37,10 @@ public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
     @Override
     public void updateEntity() {
         if (worldObj.isRemote) return;
+
+        // Always try to push buffered output down, even when not growing
+        pushOutputBelow();
+
         if (slots[SLOT_SOIL] == null || slots[SLOT_SEED] == null) return;
         if (isOutputFull()) return;
 
@@ -46,40 +53,112 @@ public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Auto-eject — push one item per tick from output slot into inventory below
+    // -------------------------------------------------------------------------
+
+    private void pushOutputBelow() {
+        if (slots[SLOT_OUTPUT] == null || slots[SLOT_OUTPUT].stackSize <= 0) return;
+
+        TileEntity below = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
+        if (!(below instanceof IInventory)) return;
+
+        if (insertOneItem((IInventory) below, slots[SLOT_OUTPUT])) {
+            slots[SLOT_OUTPUT].stackSize--;
+            if (slots[SLOT_OUTPUT].stackSize <= 0) slots[SLOT_OUTPUT] = null;
+            markDirty();
+        }
+    }
+
+    /**
+     * Inserts one unit of {@code stack} into {@code inv} from the top (side=UP).
+     * Respects ISidedInventory if present. Modifies {@code stack} in-place on
+     * success.
+     */
+    private static boolean insertOneItem(IInventory inv, ItemStack stack) {
+        int fromSide = 1; // UP — we're inserting from above
+        if (inv instanceof ISidedInventory) {
+            ISidedInventory sided = (ISidedInventory) inv;
+            for (int slotId : sided.getAccessibleSlotsFromSide(fromSide)) {
+                if (sided.canInsertItem(slotId, stack, fromSide) && tryInsertIntoSlot(inv, slotId, stack)) return true;
+            }
+        } else {
+            for (int i = 0; i < inv.getSizeInventory(); i++) {
+                if (tryInsertIntoSlot(inv, i, stack)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean tryInsertIntoSlot(IInventory inv, int slotId, ItemStack stack) {
+        if (!inv.isItemValidForSlot(slotId, stack)) return false;
+        ItemStack existing = inv.getStackInSlot(slotId);
+        if (existing == null) {
+            inv.setInventorySlotContents(slotId, stack.copy());
+            inv.setInventorySlotContents(slotId, inv.getStackInSlot(slotId)); // trigger dirty
+            return true;
+        }
+        if (existing.isItemEqual(stack) && existing.stackSize < existing.getMaxStackSize()
+            && existing.stackSize < inv.getInventoryStackLimit()) {
+            existing.stackSize++;
+            inv.setInventorySlotContents(slotId, existing);
+            return true;
+        }
+        return false;
+    }
+
     private int getMaxGrowthTicks() {
         float soilMult = SoilRegistry.getMultiplier(slots[SLOT_SOIL]);
-        if (CropsNHCompat.isCropsNHSeed(slots[SLOT_SEED])) {
-            return CropsNHCompat.getGrowthTicks(slots[SLOT_SEED], soilMult);
+        if (CropCompatManager.hasCropsNH() && CropCompatManager.get()
+            .isSeed(slots[SLOT_SEED])) {
+            return CropCompatManager.get()
+                .getGrowthTicks(slots[SLOT_SEED], soilMult);
         }
         return BotanyCropRegistry.getGrowthTicks(slots[SLOT_SEED], soilMult);
     }
 
     private void doHarvest() {
         List<ItemStack> drops;
-        if (CropsNHCompat.isCropsNHSeed(slots[SLOT_SEED])) {
-            drops = CropsNHCompat.getDrops(slots[SLOT_SEED]);
+        if (CropCompatManager.hasCropsNH() && CropCompatManager.get()
+            .isSeed(slots[SLOT_SEED])) {
+            drops = CropCompatManager.get()
+                .getDrops(slots[SLOT_SEED]);
         } else {
             drops = BotanyCropRegistry.getDrops(slots[SLOT_SEED]);
         }
+
+        TileEntity below = worldObj.getTileEntity(xCoord, yCoord - 1, zCoord);
+        IInventory dest = (below instanceof IInventory) ? (IInventory) below : null;
+
         for (ItemStack drop : drops) {
-            addToOutput(drop);
+            if (drop == null || drop.stackSize <= 0) continue;
+            // Push directly into below inventory first (handles multiple item types)
+            if (dest != null && insertOneItem(dest, drop)) continue;
+            // Buffer in output slot
+            if (!addToOutput(drop)) {
+                // Last resort: pop into the world above the pot
+                worldObj.spawnEntityInWorld(
+                    new EntityItem(worldObj, xCoord + 0.5, yCoord + 1.0, zCoord + 0.5, drop.copy()));
+            }
         }
     }
 
-    private void addToOutput(ItemStack incoming) {
-        if (incoming == null || incoming.stackSize <= 0) return;
+    /** Returns true if the item was accepted into the output slot. */
+    private boolean addToOutput(ItemStack incoming) {
+        if (incoming == null || incoming.stackSize <= 0) return true;
 
         if (slots[SLOT_OUTPUT] == null) {
             slots[SLOT_OUTPUT] = incoming.copy();
-            return;
+            return true;
         }
-        if (ItemStack.areItemsEqual(slots[SLOT_OUTPUT], incoming)
-                && ItemStack.areItemStackTagsEqual(slots[SLOT_OUTPUT], incoming)) {
+        if (slots[SLOT_OUTPUT].isItemEqual(incoming)) {
             int space = slots[SLOT_OUTPUT].getMaxStackSize() - slots[SLOT_OUTPUT].stackSize;
-            slots[SLOT_OUTPUT].stackSize += Math.min(space, incoming.stackSize);
+            if (space > 0) {
+                slots[SLOT_OUTPUT].stackSize += Math.min(space, incoming.stackSize);
+                return true;
+            }
         }
-        // If output slot has a different item, the drop is silently lost.
-        // In practice hoppers drain the output slot fast enough this rarely matters.
+        return false;
     }
 
     private boolean isOutputFull() {
@@ -140,7 +219,9 @@ public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
     }
 
     private boolean isValidSeed(ItemStack stack) {
-        return CropsNHCompat.isCropsNHSeed(stack) || BotanyCropRegistry.isKnownSeed(stack);
+        if (CropCompatManager.hasCropsNH() && CropCompatManager.get()
+            .isSeed(stack)) return true;
+        return BotanyCropRegistry.isKnownSeed(stack);
     }
 
     /** 0.0–1.0 growth fraction; useful for rendering a progress bar. */
@@ -154,14 +235,41 @@ public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
     // IInventory
     // -------------------------------------------------------------------------
 
-    @Override public int getSizeInventory()                          { return SIZE; }
-    @Override public ItemStack getStackInSlot(int slot)             { return slots[slot]; }
-    @Override public String getInventoryName()                       { return "container.botany_pot"; }
-    @Override public boolean hasCustomInventoryName()                { return false; }
-    @Override public int getInventoryStackLimit()                    { return 64; }
-    @Override public boolean isUseableByPlayer(EntityPlayer player) { return true; }
-    @Override public void openInventory()                           {}
-    @Override public void closeInventory()                          {}
+    @Override
+    public int getSizeInventory() {
+        return SIZE;
+    }
+
+    @Override
+    public ItemStack getStackInSlot(int slot) {
+        return slots[slot];
+    }
+
+    @Override
+    public String getInventoryName() {
+        return "container.botany_pot";
+    }
+
+    @Override
+    public boolean hasCustomInventoryName() {
+        return false;
+    }
+
+    @Override
+    public int getInventoryStackLimit() {
+        return 64;
+    }
+
+    @Override
+    public boolean isUseableByPlayer(EntityPlayer player) {
+        return true;
+    }
+
+    @Override
+    public void openInventory() {}
+
+    @Override
+    public void closeInventory() {}
 
     @Override
     public ItemStack decrStackSize(int slot, int amount) {
@@ -193,8 +301,8 @@ public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
 
     @Override
     public boolean isItemValidForSlot(int slot, ItemStack stack) {
-        if (slot == SLOT_SOIL)   return SoilRegistry.isValidSoil(stack);
-        if (slot == SLOT_SEED)   return isValidSeed(stack);
+        if (slot == SLOT_SOIL) return SoilRegistry.isValidSoil(stack);
+        if (slot == SLOT_SEED) return isValidSeed(stack);
         return false;
     }
 

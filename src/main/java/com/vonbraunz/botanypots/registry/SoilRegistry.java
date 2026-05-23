@@ -1,13 +1,13 @@
 package com.vonbraunz.botanypots.registry;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class SoilRegistry {
 
@@ -39,13 +39,13 @@ public class SoilRegistry {
     }
 
     public static void registerDefaults() {
-        register(new ItemStack(Blocks.farmland),  1.0f);
-        register(new ItemStack(Blocks.dirt),      0.5f);
-        register(new ItemStack(Blocks.grass),     0.5f);
-        register(new ItemStack(Blocks.mycelium),  0.8f);
+        register(new ItemStack(Blocks.farmland), 1.0f);
+        register(new ItemStack(Blocks.dirt), 0.5f);
+        register(new ItemStack(Blocks.grass), 0.5f);
+        register(new ItemStack(Blocks.mycelium), 0.8f);
         register(new ItemStack(Blocks.soul_sand), 0.75f);
-        register(new ItemStack(Blocks.sand),      0.4f);
-        register(new ItemStack(Blocks.gravel),    0.3f);
+        register(new ItemStack(Blocks.sand), 0.4f);
+        register(new ItemStack(Blocks.gravel), 0.3f);
     }
 
     private static String key(ItemStack stack) {

@@ -14,13 +14,15 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-import com.vonbraunz.botanypots.client.RenderBotanyPot;
 import com.vonbraunz.botanypots.tileentity.TileEntityBotanyPot;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockBotanyPot extends BlockContainer {
+
+    // Set by ClientProxy during renderer registration; -1 = no custom renderer (server)
+    public static int RENDER_ID = -1;
 
     // Hitbox matches vanilla flower pot footprint exactly
     private static final float BMIN = 5f / 16f;
@@ -82,7 +84,7 @@ public class BlockBotanyPot extends BlockContainer {
 
     @Override
     public int getRenderType() {
-        return RenderBotanyPot.RENDER_ID;
+        return RENDER_ID;
     }
 
     @Override

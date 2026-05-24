@@ -8,6 +8,8 @@ import net.minecraft.world.IBlockAccess;
 
 import org.lwjgl.opengl.GL11;
 
+import com.vonbraunz.botanypots.blocks.BlockBotanyPot;
+
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.relauncher.Side;
@@ -16,7 +18,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class RenderBotanyPot implements ISimpleBlockRenderingHandler {
 
-    public static int RENDER_ID;
 
     // Pot geometry — matches vanilla flower pot footprint exactly
     private static final float PO = 5f / 16f; // outer min XZ
@@ -28,8 +29,8 @@ public class RenderBotanyPot implements ISimpleBlockRenderingHandler {
 
     public static void register() {
         RenderBotanyPot instance = new RenderBotanyPot();
-        RENDER_ID = RenderingRegistry.getNextAvailableRenderId();
-        RenderingRegistry.registerBlockHandler(RENDER_ID, instance);
+        BlockBotanyPot.RENDER_ID = RenderingRegistry.getNextAvailableRenderId();
+        RenderingRegistry.registerBlockHandler(BlockBotanyPot.RENDER_ID, instance);
     }
 
     /** Renders five sub-boxes: one base plate + four 1-px walls = open cup. */
@@ -123,6 +124,6 @@ public class RenderBotanyPot implements ISimpleBlockRenderingHandler {
 
     @Override
     public int getRenderId() {
-        return RENDER_ID;
+        return BlockBotanyPot.RENDER_ID;
     }
 }

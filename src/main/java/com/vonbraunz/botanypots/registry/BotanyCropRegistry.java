@@ -63,6 +63,10 @@ public class BotanyCropRegistry {
         return stack != null && crops.containsKey(key(stack));
     }
 
+    public static int getRegisteredSeedCount() {
+        return crops.size();
+    }
+
     public static int getGrowthTicks(ItemStack seed, float soilMultiplier) {
         CropData data = crops.get(key(seed));
         int base = (data != null) ? data.baseGrowthTicks : BotanyPotsConfig.defaultGrowthTicks;
@@ -140,6 +144,62 @@ public class BotanyCropRegistry {
     }
 
     /**
+     * Hardcoded vanilla crop mappings — covers seeds that may not have OreDict crop entries.
+     */
+    public static void registerDefaultCrops() {
+        int t = BotanyPotsConfig.defaultGrowthTicks;
+
+        // Wheat: seed → wheat + 50% seed back
+        register(
+            new ItemStack(Items.wheat_seeds),
+            Arrays.asList(
+                new OutputEntry(new ItemStack(Items.wheat), 1.0f),
+                new OutputEntry(new ItemStack(Items.wheat_seeds), 0.5f)),
+            t);
+
+        // Carrot: carrot is both seed and crop
+        register(
+            new ItemStack(Items.carrot),
+            Arrays.asList(
+                new OutputEntry(new ItemStack(Items.carrot), 1.0f),
+                new OutputEntry(new ItemStack(Items.carrot), 0.5f)),
+            t);
+
+        // Potato
+        register(
+            new ItemStack(Items.potato),
+            Arrays.asList(
+                new OutputEntry(new ItemStack(Items.potato), 1.0f),
+                new OutputEntry(new ItemStack(Items.potato), 0.5f)),
+            t);
+
+        // Melon seeds → melon slice
+        register(
+            new ItemStack(Items.melon_seeds),
+            Arrays.asList(
+                new OutputEntry(new ItemStack(Items.melon), 1.0f),
+                new OutputEntry(new ItemStack(Items.melon_seeds), 0.5f)),
+            t);
+
+        // Pumpkin seeds → pumpkin
+        register(
+            new ItemStack(Items.pumpkin_seeds),
+            Arrays.asList(
+                new OutputEntry(new ItemStack(Blocks.pumpkin), 1.0f),
+                new OutputEntry(new ItemStack(Items.pumpkin_seeds), 0.5f)),
+            t);
+
+        // Nether wart
+        register(
+            new ItemStack(Items.nether_wart),
+            Arrays.asList(
+                new OutputEntry(new ItemStack(Items.nether_wart), 1.0f),
+                new OutputEntry(new ItemStack(Items.nether_wart), 0.5f)),
+            t);
+
+    }
+
+    /**
      * Scans the OreDict for seedX/cropX and treeSaplingX/logX pairs.
      * Call this in postInit so all mods have had a chance to register.
      */
@@ -148,13 +208,18 @@ public class BotanyCropRegistry {
             if (oreName.startsWith("seed")) {
                 String cropName = "crop" + oreName.substring(4);
                 List<ItemStack> seedItems = OreDictionary.getOres(oreName);
-                List<ItemStack> cropItems = OreDictionary.getOres(cropName);
-                if (seedItems.isEmpty() || cropItems.isEmpty()) continue;
+                if (seedItems.isEmpty()) continue;
 
-                ItemStack output = cropItems.get(0);
+                List<ItemStack> cropItems = OreDictionary.getOres(cropName);
+                ItemStack output = cropItems.isEmpty() ? null : cropItems.get(0);
                 for (ItemStack seed : seedItems) {
                     if (isKnownSeed(seed)) continue;
-                    register(seed, output, BotanyPotsConfig.defaultGrowthTicks);
+                    if (output != null) {
+                        register(seed, output, BotanyPotsConfig.defaultGrowthTicks);
+                    } else {
+                        // No crop OreDict entry — register as valid seed with no drop
+                        register(seed, Collections.emptyList(), BotanyPotsConfig.defaultGrowthTicks);
+                    }
                 }
 
             } else if (oreName.startsWith("treeSapling")) {

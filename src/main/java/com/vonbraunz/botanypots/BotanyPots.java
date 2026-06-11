@@ -51,6 +51,7 @@ public class BotanyPots {
         WailaCompat.init();
         SoilRegistry.registerDefaults();
         BotanyCropRegistry.registerDefaultSaplings();
+        BotanyCropRegistry.registerDefaultCrops();
 
         // Combines the two-step 1.20.1 recipe into one:
         // "S S" S = hardened_clay (terracotta)

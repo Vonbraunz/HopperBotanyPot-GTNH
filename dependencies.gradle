@@ -1,6 +1,6 @@
 dependencies {
     // Compile + runtime in dev, not bundled in the published jar
-    compileOnly("com.github.GTNewHorizons:CropsNH:2.0.61:dev")                        { transitive = false }
+    compileOnly("com.github.GTNewHorizons:CropsNH:2.0.69:dev")                        { transitive = false }
     devOnlyNonPublishable("com.github.GTNewHorizons:waila:1.19.28:dev")               { transitive = false }
     devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.98-GTNH:dev")  { transitive = false }
     devOnlyNonPublishable("com.github.GTNewHorizons:GTNHLib:0.10.2:dev")              { transitive = false }

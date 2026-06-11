@@ -204,6 +204,15 @@ public class BotanyCropRegistry {
      * Call this in postInit so all mods have had a chance to register.
      */
     public static void registerOreDictCrops() {
+        // Build a reverse map: item key -> list of OreDict names it appears in.
+        // Used to resolve crop outputs for seeds registered only under "listAllSeed".
+        Map<String, List<String>> itemToOreNames = new HashMap<>();
+        for (String oreName : OreDictionary.getOreNames()) {
+            for (ItemStack stack : OreDictionary.getOres(oreName)) {
+                itemToOreNames.computeIfAbsent(key(stack), k -> new ArrayList<>()).add(oreName);
+            }
+        }
+
         for (String oreName : OreDictionary.getOreNames()) {
             if (oreName.startsWith("seed")) {
                 String cropName = "crop" + oreName.substring(4);
@@ -217,7 +226,6 @@ public class BotanyCropRegistry {
                     if (output != null) {
                         register(seed, output, BotanyPotsConfig.defaultGrowthTicks);
                     } else {
-                        // No crop OreDict entry — register as valid seed with no drop
                         register(seed, Collections.emptyList(), BotanyPotsConfig.defaultGrowthTicks);
                     }
                 }
@@ -236,6 +244,31 @@ public class BotanyCropRegistry {
                         Arrays.asList(new OutputEntry(log, 1.0f), new OutputEntry(sapling, 0.5f)),
                         BotanyPotsConfig.defaultSaplingGrowthTicks);
                 }
+            }
+        }
+
+        // Pam's HarvestCraft (and similar mods) register seeds under "listAllSeed"
+        // without individual seedX/cropX entries. For each unknown seed in that list,
+        // try to resolve a crop output by finding its seedX name and mapping to cropX.
+        for (ItemStack seed : OreDictionary.getOres("listAllSeed")) {
+            if (isKnownSeed(seed)) continue;
+            ItemStack output = null;
+            List<String> names = itemToOreNames.get(key(seed));
+            if (names != null) {
+                for (String name : names) {
+                    if (name.startsWith("seed")) {
+                        List<ItemStack> cropItems = OreDictionary.getOres("crop" + name.substring(4));
+                        if (!cropItems.isEmpty()) {
+                            output = cropItems.get(0);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (output != null) {
+                register(seed, output, BotanyPotsConfig.defaultGrowthTicks);
+            } else {
+                register(seed, Collections.emptyList(), BotanyPotsConfig.defaultGrowthTicks);
             }
         }
     }

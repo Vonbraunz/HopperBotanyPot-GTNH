@@ -38,7 +38,8 @@ public class BlockBotanyPot extends BlockContainer {
         // Try common MCP names first (works in vanilla dev environment)
         for (String name : new String[] { "clay", "ground", "rock", "iron", "wood", "grass" }) {
             try {
-                Object val = Material.class.getField(name).get(null);
+                Object val = Material.class.getField(name)
+                    .get(null);
                 if (val instanceof Material) return (Material) val;
             } catch (Exception ignored) {}
         }

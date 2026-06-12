@@ -209,7 +209,8 @@ public class BotanyCropRegistry {
         Map<String, List<String>> itemToOreNames = new HashMap<>();
         for (String oreName : OreDictionary.getOreNames()) {
             for (ItemStack stack : OreDictionary.getOres(oreName)) {
-                itemToOreNames.computeIfAbsent(key(stack), k -> new ArrayList<>()).add(oreName);
+                itemToOreNames.computeIfAbsent(key(stack), k -> new ArrayList<>())
+                    .add(oreName);
             }
         }
 

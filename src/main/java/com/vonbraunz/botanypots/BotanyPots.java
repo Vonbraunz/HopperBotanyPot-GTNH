@@ -5,14 +5,14 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 
-import com.vonbraunz.botanypots.blocks.BlockBotanyPot;
+import com.vonbraunz.botanypots.blocks.BlockHopperBotanyPot;
 import com.vonbraunz.botanypots.compat.CropCompatManager;
 import com.vonbraunz.botanypots.compat.WailaCompat;
 import com.vonbraunz.botanypots.config.BotanyPotsConfig;
 import com.vonbraunz.botanypots.proxy.CommonProxy;
 import com.vonbraunz.botanypots.registry.BotanyCropRegistry;
 import com.vonbraunz.botanypots.registry.SoilRegistry;
-import com.vonbraunz.botanypots.tileentity.TileEntityBotanyPot;
+import com.vonbraunz.botanypots.tileentity.TileEntityHopperBotanyPot;
 
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
@@ -33,7 +33,7 @@ public class BotanyPots {
         serverSide = "com.vonbraunz.botanypots.proxy.CommonProxy")
     public static CommonProxy proxy;
 
-    public static Block blockBotanyPot;
+    public static Block blockHopperBotanyPot;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -41,9 +41,9 @@ public class BotanyPots {
 
         CropCompatManager.init();
 
-        blockBotanyPot = new BlockBotanyPot();
-        GameRegistry.registerBlock(blockBotanyPot, "botany_pot");
-        GameRegistry.registerTileEntity(TileEntityBotanyPot.class, "TileEntityBotanyPot");
+        blockHopperBotanyPot = new BlockHopperBotanyPot();
+        GameRegistry.registerBlock(blockHopperBotanyPot, "hopper_botany_pot");
+        GameRegistry.registerTileEntity(TileEntityHopperBotanyPot.class, "TileEntityHopperBotanyPot");
     }
 
     @Mod.EventHandler
@@ -53,21 +53,17 @@ public class BotanyPots {
         BotanyCropRegistry.registerDefaultSaplings();
         BotanyCropRegistry.registerDefaultCrops();
 
-        // Combines the two-step 1.20.1 recipe into one:
-        // "S S" S = hardened_clay (terracotta)
-        // "SPS" P = flower_pot
-        // " H " H = hopper
         GameRegistry.addRecipe(
-            new ItemStack(blockBotanyPot),
-            "S S",
-            "SPS",
+            new ItemStack(blockHopperBotanyPot),
+            "SHS",
+            "HPH",
             " H ",
             'S',
             new ItemStack(Blocks.hardened_clay),
-            'P',
-            new ItemStack(Items.flower_pot),
             'H',
-            new ItemStack(Blocks.hopper));
+            new ItemStack(Blocks.hopper),
+            'P',
+            new ItemStack(Items.flower_pot));
 
         proxy.registerRenderers();
     }

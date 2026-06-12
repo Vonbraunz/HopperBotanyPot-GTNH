@@ -219,7 +219,8 @@ public class TileEntityBotanyPot extends TileEntity implements ISidedInventory {
     }
 
     private boolean isValidSeed(ItemStack stack) {
-        if (CropCompatManager.hasCropsNH() && CropCompatManager.get().isSeed(stack)) return true;
+        if (CropCompatManager.hasCropsNH() && CropCompatManager.get()
+            .isSeed(stack)) return true;
         return BotanyCropRegistry.isKnownSeed(stack);
     }
 
